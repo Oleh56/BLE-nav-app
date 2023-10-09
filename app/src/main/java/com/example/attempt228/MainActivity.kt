@@ -1,5 +1,6 @@
 package com.example.attempt228
 
+import NetworkRequests
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -8,6 +9,16 @@ import com.example.attempt228.databinding.ActivityMainBinding
 import java.security.SecureRandom
 import java.math.BigInteger
 import org.mindrot.jbcrypt.BCrypt
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okhttp3.ResponseBody
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,32 +34,42 @@ class MainActivity : AppCompatActivity() {
             val password = binding.etPassword.text.toString()
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
-                val hashedPassword = hashPassword(password)
-                Log.i("Password hashing",  "Hashed password $hashedPassword")
+                postCredentials(email, password)
 
 
             } else Toast.makeText(this, "Input your email and password", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun generateRandomSalt(): ByteArray {
-        val random = SecureRandom()
-        val salt = ByteArray(16)
-        random.nextBytes(salt)
+    private fun postCredentials(email: String, password: String) {
+        val networkUtils = NetworkRequests()
 
-        return salt
-    }
+        val jsonObject = JSONObject()
+        jsonObject.put("email", email)
+        jsonObject.put("password", password)
 
-    private fun ByteArray.toHexString(): String {
-        val bigInt = BigInteger(1, this)
-        return String.format("%0${this.size * 2}x", bigInt)
-    }
+        val postRequestBody = RequestBody.create(MediaType.parse("application/json"), jsonObject.toString())
 
-    fun hashPassword(password: String): String {
-        return BCrypt.hashpw(password, BCrypt.gensalt())
-    }
+        networkUtils.authenticateUser(postRequestBody, object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.isSuccessful) {
+                    var serverResponse = response.body()?.string()
+                    Log.i("response", serverResponse.toString())
 
-    fun verifyPassword(inputPassword: String, hashedPassword: String): Boolean {
-        return BCrypt.checkpw(inputPassword, hashedPassword)
+                } else {
+
+
+                    Toast.makeText(this@MainActivity, "Authentication failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+
+
+                Toast.makeText(this@MainActivity, "Network error", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 }
+
+
