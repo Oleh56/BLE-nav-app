@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import com.example.attempt228.databinding.ActivityMainBinding
 import java.security.SecureRandom
 import java.math.BigInteger
@@ -20,6 +21,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -33,13 +35,43 @@ class MainActivity : AppCompatActivity() {
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
 
-            if (email.isNotEmpty() && password.isNotEmpty()) {
+            val isValidEmail = isValidEmail(email)
+            val isPasswordValid = password.length >= 5
+
+            if (isValidEmail && isPasswordValid) {
+                // Clear any existing errors
+                binding.etEmail.error = null
+                binding.etPassword.error = null
+
                 postCredentials(email, password)
+            } else {
+                if (!isValidEmail) {
+                    // Set red error text below the email field
+                    binding.etEmail.error = "Введіть коректну електронну пошту"
+                } else {
+                    // Clear the error if email is valid
+                    binding.etEmail.error = null
+                }
 
+                if (!isPasswordValid) {
+                    // Set red error text below the password field
+                    binding.etPassword.error =
+                        "Пароль повинен складатися щонайменше з восьми символів"
+                } else {
+                    // Clear the error if password is valid
+                    binding.etPassword.error = null
+                }
 
-            } else Toast.makeText(this, "Input your email and password", Toast.LENGTH_SHORT).show()
+            }
+
         }
     }
+
+    private fun isValidEmail(email: String): Boolean {
+        val emailRegex = "^[A-Za-z0-9+_.-]+@(.+)\$"
+        return email.matches(emailRegex.toRegex())
+    }
+
 
     private fun postCredentials(email: String, password: String) {
         val networkUtils = NetworkRequests()
@@ -53,22 +85,47 @@ class MainActivity : AppCompatActivity() {
         networkUtils.authenticateUser(postRequestBody, object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.isSuccessful) {
-                    var serverResponse = response.body()?.string()
+                    val serverResponse = response.body()?.string()
                     Log.i("response", serverResponse.toString())
 
+                    serverResponse?.let {
+                        when {
+                            it.contains("NO USER") -> {
+                                runOnUiThread {
+                                    Log.d("Thread", "Running on UI Thread")
+                                    Toast.makeText(this@MainActivity, "Користувача не знайдено", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            it.contains("STUDENT") -> {
+
+                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+                            }
+                            it.contains("TEACHER") -> {
+
+                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+
+                            }
+                            it.contains("ADMIN") -> {
+
+                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+                            }
+                            else -> {
+                                // Handle unexpected responses here
+                            }
+                        }
+                    }
                 } else {
 
-
-                    Toast.makeText(this@MainActivity, "Authentication failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Server Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
 
-
-                Toast.makeText(this@MainActivity, "Network error", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
+
     }
 }
 
