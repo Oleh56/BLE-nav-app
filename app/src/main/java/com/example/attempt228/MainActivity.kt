@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity() {
                 binding.etPassword.error = null
 
                 postCredentials(email, password)
+
+
             } else {
                 if (!isValidEmail) {
                     // Set red error text below the email field
@@ -61,9 +63,12 @@ class MainActivity : AppCompatActivity() {
                     // Clear the error if password is valid
                     binding.etPassword.error = null
                 }
-
             }
 
+        }
+
+        binding.guestButton.setOnClickListener(){
+            RedirToActivity.redirectToNavigationActivity(this@MainActivity)
         }
     }
 
@@ -71,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         val emailRegex = "^[A-Za-z0-9+_.-]+@(.+)\$"
         return email.matches(emailRegex.toRegex())
     }
+
 
 
     private fun postCredentials(email: String, password: String) {
@@ -108,9 +114,6 @@ class MainActivity : AppCompatActivity() {
                             it.contains("ADMIN") -> {
 
                                     RedirToActivity.redirectToNavigationActivity(this@MainActivity)
-                            }
-                            else -> {
-                                // Handle unexpected responses here
                             }
                         }
                     }

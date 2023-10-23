@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">attempt228</string>
+    <string name="greeting">Вітаємо!</string>
+    <string name="auth_text">Введіть корпоративну поштову скриньку та пароль для входу</string>
+    <string name="email_box_text">Поштова скринька:</string>
+    <string name="password_text">Пароль:</string>
+    <string name="btn_confirm">Підтвердити</string>
+    <string name="btn_guest">Я відвідувач</string>
+
 </resources>

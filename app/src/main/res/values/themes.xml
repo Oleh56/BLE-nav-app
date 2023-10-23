@@ -6,4 +6,27 @@
     </style>
 
     <style name="Theme.Attempt228" parent="Base.Theme.Attempt228" />
+
+    <style name="auth_text">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#41578A</item>
+    </style>
+
+    <style name="email_password_text">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#97A1B9</item>
+    </style>
+
+    <style name="btn_confirm">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#ECF2FF</item>
+    </style>
+
+    <style name="guest_button">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#97A1B9</item>
+    </style>
+
+
+
 </resources>

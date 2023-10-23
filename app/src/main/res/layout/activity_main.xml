@@ -4,72 +4,167 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:background="#ECF2FF" >
+    android:background="#ECF2FF"
+    tools:context=".MainActivity">
 
     <EditText
         android:id="@+id/etEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="320dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="384dp"
+        android:layout_marginEnd="41dp"
         android:width="279dp"
         android:height="44dp"
-        android:paddingStart="41dp"
-        android:paddingEnd="41dp"
-        android:background="#C7D5F8"
+        android:background="@drawable/login_box"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.235"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/etPaswordText"
+        android:layout_width="47dp"
+        android:layout_height="15dp"
+        android:layout_marginBottom="4dp"
+        android:gravity="top"
+        android:text="@string/password_text"
+        android:textAppearance="@style/email_password_text"
+        app:layout_constraintBottom_toTopOf="@+id/etPassword"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.164"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
         android:id="@+id/etPassword"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="36dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="480dp"
+        android:layout_marginEnd="41dp"
         android:width="279dp"
         android:height="44dp"
+        android:background="@drawable/login_box"
         android:paddingStart="41dp"
         android:paddingEnd="41dp"
-        android:background="#C7D5F8"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.235"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/etEmail" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView"
-        android:layout_width="128dp"
-        android:layout_height="28dp"
-        android:layout_marginBottom="8dp"
-        android:text="Поштова скринька"
+        android:id="@+id/etEmailBoxText"
+        android:layout_width="113dp"
+        android:layout_height="18dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="top"
+        android:lineSpacingExtra="3sp"
+        android:text="@string/email_box_text"
+        android:textAppearance="@style/email_password_text"
+        android:translationY="-1.74sp"
         app:layout_constraintBottom_toTopOf="@+id/etEmail"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.233"
+        app:layout_constraintHorizontal_bias="0.187"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="125dp"
-        android:layout_height="23dp"
-        android:layout_marginTop="12dp"
-        android:text="Пароль"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.23"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/etEmail" />
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnConfirm"
-        android:layout_width="227dp"
-        android:layout_height="56dp"
-        android:layout_marginBottom="76dp"
-        android:text="Підтвердити"
+        android:layout_width="279dp"
+        android:layout_height="48dp"
+        android:backgroundTint="#5C709F"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.393"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.931" />
+
+    <TextView
+        android:id="@+id/guest_button"
+        android:layout_width="73dp"
+        android:layout_height="18dp"
+        android:clickable="true"
+        android:gravity="top"
+        android:lineSpacingExtra="3sp"
+        android:text="@string/btn_guest"
+        android:textAppearance="@style/guest_button"
+        android:translationY="-1.74sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.458"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.849" />
+
+    <TextView
+        android:id="@+id/tvButtonConfirm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:elevation="2dp"
+        android:lineSpacingExtra="3sp"
+        android:text="@string/btn_confirm"
+        android:textColor="#ECF2FF"
+        android:textSize="12sp"
+        android:translationY="-1.74sp"
+        android:visibility="visible"
+        app:layout_constraintBaseline_toBaselineOf="@id/btnConfirm"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/btnConfirm"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintStart_toStartOf="@+id/btnConfirm"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.91" />
+
+    <ImageView
+        android:layout_width="124dp"
+        android:layout_height="124dp"
+        android:layout_marginStart="212dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="616dp"
+        android:src="@drawable/logo_blue"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/greeting"
+        android:layout_width="145dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="207dp"
+        android:layout_marginEnd="173dp"
+        android:layout_marginBottom="545dp"
+        android:fontFamily="@font/inter_variable_font_slnt_wght"
+        android:gravity="top"
+        android:lineSpacingExtra="9sp"
+        android:text="@string/greeting"
+        android:textColor="@color/auth_logo_greetings_confirm_color"
+        android:textSize="35sp"
+        android:textStyle="bold"
+        android:translationY="-4.64sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/auth_text"
+        android:layout_width="283dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="41dp"
+        android:gravity="top"
+        android:lineSpacingExtra="5sp"
+        android:text="@string/auth_text"
+        android:textAppearance="@style/auth_text"
+        android:translationY="-2.32sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/greeting" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
 
 
 
