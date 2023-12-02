@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class NetworkRequests {
-    private val BASE_URL = "http://192.168.1.102:3333/"
+    private val BASE_URL = "http://192.168.1.10:3333/"
     private val retrofit: Retrofit
 
     init {

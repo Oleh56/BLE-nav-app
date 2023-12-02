@@ -68,7 +68,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.guestButton.setOnClickListener(){
-            RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+            RedirToActivity.redirectToBleScanActivity(this@MainActivity)
+        }
+
+        binding.btCompass.setOnClickListener(){
+            RedirToActivity.redirectToCompassActivity(this@MainActivity)
         }
     }
 
