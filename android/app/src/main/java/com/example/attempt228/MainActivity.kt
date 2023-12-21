@@ -11,7 +11,9 @@ import java.security.SecureRandom
 import java.math.BigInteger
 import org.mindrot.jbcrypt.BCrypt
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Call
@@ -74,6 +76,9 @@ class MainActivity : AppCompatActivity() {
         binding.btCompass.setOnClickListener(){
             RedirToActivity.redirectToCompassActivity(this@MainActivity)
         }
+        binding.btNavigation.setOnClickListener(){
+            RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+        }
     }
 
     private fun isValidEmail(email: String): Boolean {
@@ -90,7 +95,8 @@ class MainActivity : AppCompatActivity() {
         jsonObject.put("email", email)
         jsonObject.put("password", password)
 
-        val postRequestBody = RequestBody.create(MediaType.parse("application/json"), jsonObject.toString())
+        val postRequestBody =
+            jsonObject.toString().toRequestBody("application/json".toMediaTypeOrNull())
 
         networkUtils.authenticateUser(postRequestBody, object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {

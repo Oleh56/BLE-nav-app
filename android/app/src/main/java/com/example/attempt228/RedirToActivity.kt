@@ -16,4 +16,7 @@ object RedirToActivity {
         val intent = Intent(context, compassActivity::class.java)
         context.startActivity(intent)
     }
+    fun redirectToLoginActivity(context: Context){
+        val intent = Intent(context, MainActivity::class.java)
+    }
 }
