@@ -79,6 +79,9 @@ class MainActivity : AppCompatActivity() {
         binding.btNavigation.setOnClickListener(){
             RedirToActivity.redirectToNavigationActivity(this@MainActivity)
         }
+        binding.btnAudio.setOnClickListener(){
+            RedirToActivity.redirectToMediaRecordActivity(this@MainActivity)
+        }
     }
 
     private fun isValidEmail(email: String): Boolean {

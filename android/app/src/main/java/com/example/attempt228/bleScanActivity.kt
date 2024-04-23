@@ -1,38 +1,34 @@
 package com.example.attempt228
 
-
 import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.attempt228.databinding.ActivityBleScanBinding
-
+import kotlin.math.pow
 
 class bleScanActivity : AppCompatActivity() {
     private var btAdapter: BluetoothAdapter? = null
     private var btLeScanner: BluetoothLeScanner? = null
     private lateinit var binding: ActivityBleScanBinding
     private lateinit var rcAdapter: BDeviceAdapter
-
+    private val ble1mArr = mutableListOf<Int>()
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){}
 
@@ -45,6 +41,9 @@ class bleScanActivity : AppCompatActivity() {
             }
         }
 
+    private var referenceRSSI = -70 // estimated RSSI at 1 meter
+    private val pathLossExponent = 2.4
+
     private val scanLeCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
@@ -53,43 +52,35 @@ class bleScanActivity : AppCompatActivity() {
             try {
                 deviceName = result?.device?.name
                 deviceRssi = result?.rssi
-                if (deviceName != null && deviceRssi != null){
-                    rcAdapter.addDevice(BDevice(
-                        deviceName,
-                        deviceRssi
-                    ))
+                if (deviceName == "Redmi Note 8 Pro" && deviceRssi != null){
+                    ble1mArr.add(deviceRssi)
+                    calcAvgRSSIAt1m()
+                    calcDistance(deviceRssi)
+                    rcAdapter.addDevice(BDevice(deviceName, deviceRssi))
                     Log.d("MyLog", "$deviceName scanned. Rssi: $deviceRssi")
-                }else{
+                } else {
                     Log.d("MyLog", "Null device was scanned")
                 }
-            }catch (e: SecurityException){}
+            } catch (e: SecurityException) {
+                // Handle SecurityException if needed
+            }
         }
     }
 
-    /*private val bReceiver = object : BroadcastReceiver(){
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == BluetoothDevice.ACTION_FOUND){
-                val deviceName =
-                    intent.getStringExtra(BluetoothDevice.EXTRA_NAME)
-                val deviceRssi =
-                    intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, 0)
-                val deviceSet = mutableSetOf<BDevice>()
-                deviceSet.addAll(rcAdapter.currentList)
-                deviceSet.add(
-                    BDevice(
-                        deviceName!!,
-                        deviceRssi.toInt()
-                    )
-                )
-                rcAdapter.submitList(deviceSet.toList())
-                Log.d("MyLog", "Device name: $deviceName Rssi: $deviceRssi")
-            }
+    private fun calcAvgRSSIAt1m() {
+        if (ble1mArr.size >= 100) {
+            referenceRSSI = ble1mArr.average().toInt()
+            Log.d("1mRssi", "Estimated 1-meter RSSI: $referenceRSSI")
+            ble1mArr.clear()
         }
-    }*/
+    }
 
-    /*private fun intentFilters(){
-        this.registerReceiver(bReceiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
-    }*/
+    private fun calcDistance(rssi: Int): Double {
+        val distance = 10.0.pow((rssi - referenceRSSI) / (-10.0 * pathLossExponent))
+        Log.d("referenceRssi", "Reference rssi used: $referenceRSSI")
+        Log.d("distanceRssi", "Estimated distance $distance")
+        return distance
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,12 +89,22 @@ class bleScanActivity : AppCompatActivity() {
         initRcView()
         initBt()
         preLaunchPermissions()
-        /*intentFilters()
-        try {
-            btAdapter?.startDiscovery()
-        }catch (e: SecurityException){
-            Log.d("MyLog", e.message!!)
-        }*/
+
+        // Initialize IndoorMapView
+        val indoorMapView = findViewById<IndoorMapView>(R.id.indoorMapView)
+
+        val mappedBeacon1Width = indoorMapView.mappedBeaconX
+        val mappedBeacon1Height = indoorMapView.mappedBeaconY
+
+
+        val beaconPositions = listOf(
+            Pair(mappedBeacon1Height, mappedBeacon1Width),
+            Pair(450f, 540f),
+        )
+        indoorMapView.setBeaconPositions(beaconPositions)
+
+        val userPosition = Pair(1000f, 200f)
+        indoorMapView.setUserPosition(userPosition)
     }
 
     override fun onResume() {
@@ -115,7 +116,6 @@ class bleScanActivity : AppCompatActivity() {
         }catch (e: SecurityException){
             Log.d("MyLog", "Starting scanning failed")
         }
-
     }
 
     private fun initBt(){

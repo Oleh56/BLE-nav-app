@@ -36,6 +36,7 @@ class NavigationActivity : AppCompatActivity(), PermissionsListener {
     private lateinit var showLocationButton: Button
     private var isLocationButtonPressed = false
     private var locationProvider: DeviceLocationProvider? = null
+    private var userHeading: Double? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,12 +50,11 @@ class NavigationActivity : AppCompatActivity(), PermissionsListener {
         permissionsManager.requestLocationPermissions(this)
 
         val locationService: LocationService = LocationServiceFactory.getOrCreate()
-        var locationProvider: DeviceLocationProvider? = null
 
         val request = LocationProviderRequest.Builder()
             .interval(IntervalSettings.Builder().interval(0L).minimumInterval(0L).maximumInterval(0L).build())
-            .displacement(5F)
-            .accuracy(AccuracyLevel.HIGH)
+            .displacement(1F)
+            .accuracy(AccuracyLevel.HIGHEST)
             .build()
 
         val result = locationService.getDeviceLocationProvider(request)
@@ -67,10 +67,13 @@ class NavigationActivity : AppCompatActivity(), PermissionsListener {
         val locationObserver = object : LocationObserver {
             override fun onLocationUpdateReceived(locations: MutableList<Location>) {
                 Log.e("locationUpdate", "Location update received: " + locations)
+                if (locations.isNotEmpty()) {
+                    userHeading = locations[0].bearing
+                }
             }
         }
-
         locationProvider?.addLocationObserver(locationObserver)
+
 
         showLocationButton = findViewById(R.id.btnGeolocation)
         showLocationButton.setOnClickListener {
@@ -135,13 +138,18 @@ class NavigationActivity : AppCompatActivity(), PermissionsListener {
                 // Show user's position on the map when the button is pressed
                 location.locationPuck = createDefault2DPuck(withBearing = true)
                 location.enabled = true
-                location.puckBearing = PuckBearing.COURSE
+                location.puckBearingEnabled = true // Ensure puckBearingEnabled is set to true
+
+                // Set the puck's bearing to the user's heading
+                userHeading?.let { heading ->
+                    location.puckBearing = PuckBearing.valueOf(heading.toString())
+                }
+
                 viewport.transitionTo(
                     targetState = viewport.makeFollowPuckViewportState(),
                     transition = viewport.makeImmediateViewportTransition()
                 )
             } else {
-                // Hide user's position when the button is not pressed
                 location.enabled = false
             }
         }

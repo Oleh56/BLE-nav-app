@@ -6,5 +6,6 @@
     <string name="password_text">Пароль:</string>
     <string name="btn_confirm">Підтвердити</string>
     <string name="btn_guest">Я відвідувач</string>
+    <string name="btn_audio">Аудіо</string>
 
 </resources>
