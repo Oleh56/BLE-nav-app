@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import android.content.Context
 import android.hardware.Sensor
@@ -7,8 +7,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.example.attempt228.databinding.ActivityCompassBinding
-import kotlin.math.roundToInt
+import com.example.BLE_nav_app.databinding.ActivityCompassBinding
 
 class compassActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var binding: ActivityCompassBinding

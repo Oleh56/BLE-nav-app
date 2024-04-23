@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "attempt228"
+rootProject.name = "BLE_nav_app"
 include ':app'

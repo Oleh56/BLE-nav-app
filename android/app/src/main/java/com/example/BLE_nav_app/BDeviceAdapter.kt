@@ -1,13 +1,11 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.attempt228.databinding.BtItemBinding
+import com.example.BLE_nav_app.databinding.BtItemBinding
 
 class BDeviceAdapter(private val devices: ArrayList<BDevice>) : RecyclerView.Adapter<BDeviceAdapter.ViewHolder>() {
 

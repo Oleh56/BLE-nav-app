@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call

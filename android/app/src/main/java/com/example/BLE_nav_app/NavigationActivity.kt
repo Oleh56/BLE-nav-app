@@ -1,12 +1,11 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import androidx.activity.OnBackPressedCallback
-import com.example.attempt228.databinding.ActivityNavigationBinding
+import com.example.BLE_nav_app.databinding.ActivityNavigationBinding
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.common.location.AccuracyLevel
@@ -24,10 +23,6 @@ import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.viewport.viewport
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class NavigationActivity : AppCompatActivity(), PermissionsListener {
 

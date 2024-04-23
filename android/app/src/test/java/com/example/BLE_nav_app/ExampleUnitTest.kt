@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import org.junit.Test
 

@@ -1,5 +1,4 @@
-import com.example.attempt228.retrofitInterface
-import okhttp3.MediaType
+import com.example.BLE_nav_app.retrofitInterface
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Callback

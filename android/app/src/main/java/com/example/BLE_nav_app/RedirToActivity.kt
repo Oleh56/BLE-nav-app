@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import android.content.Context
 import android.content.Intent
@@ -17,11 +17,11 @@ object RedirToActivity {
         context.startActivity(intent)
     }
     fun redirectToLoginActivity(context: Context){
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, LoginActivity::class.java)
         context.startActivity(intent)
     }
     fun redirectToMediaRecordActivity(context: Context){
-        val intent = Intent(context, MediaRecord::class.java)
+        val intent = Intent(context, AudioRecord::class.java)
         context.startActivity(intent)
     }
 }

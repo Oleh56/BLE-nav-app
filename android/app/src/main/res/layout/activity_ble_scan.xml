@@ -37,7 +37,7 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <!-- indoorMapView -->
-        <com.example.attempt228.IndoorMapView
+        <com.example.BLE_nav_app.IndoorMapView
             android:id="@+id/indoorMapView"
             android:layout_width="900px"
             android:layout_height="1080px"

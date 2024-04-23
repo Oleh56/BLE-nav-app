@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -12,14 +12,14 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.attempt228.databinding.ActivityMediaRecordBinding
+import com.example.BLE_nav_app.databinding.ActivityAudioRecordBinding
 import java.io.IOException
 
 
 private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
-class MediaRecord : AppCompatActivity() {
-    private lateinit var binding : ActivityMediaRecordBinding
+class AudioRecord : AppCompatActivity() {
+    private lateinit var binding : ActivityAudioRecordBinding
     private var permissionsToRecordAudio = false
     private var permissions: Array<String> = arrayOf(Manifest.permission.RECORD_AUDIO)
     private var player: MediaPlayer? = null
@@ -83,7 +83,7 @@ class MediaRecord : AppCompatActivity() {
 
     private fun createMediaRecorder(): MediaRecorder {
         return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ){
-            MediaRecorder(this@MediaRecord)
+            MediaRecorder(this@AudioRecord)
         } else MediaRecorder()
     }
 
@@ -156,11 +156,11 @@ class MediaRecord : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMediaRecordBinding.inflate(layoutInflater)
+        binding = ActivityAudioRecordBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION)
-        fileName = "${this@MediaRecord.filesDir}/recorded_audio.3gp"
+        fileName = "${this@AudioRecord.filesDir}/recorded_audio.3gp"
 
         binding.btnRecord.setOnClickListener(){
             val isRecording = recorder != null

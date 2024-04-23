@@ -1,36 +1,27 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import NetworkRequests
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import com.example.attempt228.databinding.ActivityMainBinding
-import java.security.SecureRandom
-import java.math.BigInteger
-import org.mindrot.jbcrypt.BCrypt
-import okhttp3.MediaType
+import androidx.appcompat.app.AppCompatActivity
+import com.example.BLE_nav_app.databinding.ActivityLoginBinding
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 
+class LoginActivity : AppCompatActivity() {
 
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityLoginBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.btnConfirm.setOnClickListener() {
@@ -70,17 +61,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.guestButton.setOnClickListener(){
-            RedirToActivity.redirectToBleScanActivity(this@MainActivity)
+            RedirToActivity.redirectToBleScanActivity(this@LoginActivity)
         }
 
         binding.btCompass.setOnClickListener(){
-            RedirToActivity.redirectToCompassActivity(this@MainActivity)
+            RedirToActivity.redirectToCompassActivity(this@LoginActivity)
         }
         binding.btNavigation.setOnClickListener(){
-            RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+            RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
         }
         binding.btnAudio.setOnClickListener(){
-            RedirToActivity.redirectToMediaRecordActivity(this@MainActivity)
+            RedirToActivity.redirectToMediaRecordActivity(this@LoginActivity)
         }
     }
 
@@ -112,37 +103,38 @@ class MainActivity : AppCompatActivity() {
                             it.contains("NO USER") -> {
                                 runOnUiThread {
                                     Log.d("Thread", "Running on UI Thread")
-                                    Toast.makeText(this@MainActivity, "Користувача не знайдено", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(this@LoginActivity, "Користувача не знайдено", Toast.LENGTH_LONG).show()
                                 }
                             }
                             it.contains("STUDENT") -> {
 
-                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+                                    RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
                             }
                             it.contains("TEACHER") -> {
 
-                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+                                    RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
 
                             }
                             it.contains("ADMIN") -> {
 
-                                    RedirToActivity.redirectToNavigationActivity(this@MainActivity)
+                                    RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
                             }
                         }
                     }
                 } else {
 
-                    Toast.makeText(this@MainActivity, "Server Error: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LoginActivity, "Server Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
 
-                Toast.makeText(this@MainActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LoginActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
 
     }
+
 }
 
 

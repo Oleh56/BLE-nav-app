@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.attempt228'
+    namespace 'com.example.BLE_nav_app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.attempt228"
+        applicationId 'com.example.BLE_nav_app'
         minSdk 24
         targetSdk 33
         versionCode 1

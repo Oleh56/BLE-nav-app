@@ -1,4 +1,4 @@
-package com.example.attempt228
+package com.example.BLE_nav_app
 
 import android.Manifest
 import android.app.Activity
@@ -20,7 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.attempt228.databinding.ActivityBleScanBinding
+import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import kotlin.math.pow
 
 class bleScanActivity : AppCompatActivity() {

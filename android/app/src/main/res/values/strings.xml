@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">attempt228</string>
+    <string name="app_name">BLE-nav-app</string>
     <string name="greeting">Вітаємо!</string>
     <string name="auth_text">Введіть корпоративну поштову скриньку та пароль для входу</string>
     <string name="email_box_text">Поштова скринька:</string>
