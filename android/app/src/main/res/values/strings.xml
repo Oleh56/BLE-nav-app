@@ -7,5 +7,6 @@
     <string name="btn_confirm">Підтвердити</string>
     <string name="btn_guest">Я відвідувач</string>
     <string name="btn_audio">Аудіо</string>
+    <string name="estimated_distance">Estimated distance:</string>
 
 </resources>

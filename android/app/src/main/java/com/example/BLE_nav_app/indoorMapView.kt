@@ -51,7 +51,7 @@ class IndoorMapView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun setUserPosition(position: Pair<Float, Float>?) {
+    fun setUserPosition(position: Pair<Float, Float>) {
         userPosition = position
         invalidate()
     }
