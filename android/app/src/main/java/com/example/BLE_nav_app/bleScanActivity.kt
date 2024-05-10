@@ -30,6 +30,8 @@ class bleScanActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBleScanBinding
     private lateinit var rcAdapter: BDeviceAdapter
     private val beacon1Arr = mutableListOf<Int>()
+    private val beacon2Arr = mutableListOf<Int>()
+    private val beacon3Arr = mutableListOf<Int>()
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
@@ -44,9 +46,6 @@ class bleScanActivity : AppCompatActivity() {
 
     private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
     private val pathLossExponent = 2.0
-    private val averageAt1mBuffer = mutableListOf<Double>()
-    private val rssiBuffer = mutableListOf<Double>()
-    private var calibrationCompleted = false
 
     private val scanLeCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -56,20 +55,19 @@ class bleScanActivity : AppCompatActivity() {
             try {
                 deviceName = result?.device?.name
                 deviceRssi = result?.rssi
-                if (deviceName == "Redmi Note 8 Pro" && deviceRssi != null) {
+                if (
+                    (deviceName == "Beacon1" ||
+                    deviceName == "Beacon2") &&
+                    deviceRssi != null
+                    ) {
                     rcAdapter.addDevice(BDevice(deviceName, deviceRssi))
-                    calculateAt1m(deviceRssi.toDouble())
-                    val avgRssi = addToRssiBufferAndAverage(deviceRssi.toDouble())
-                    if (calibrationCompleted && avgRssi != null) {
-                        val filteredRssi = KalmanFilter(avgRssi)
-                        val distance = calcDistance(filteredRssi)
-                        Log.d("MyLog", "$deviceName scanned. Rssi: $deviceRssi")
-                        Log.d("KalmanFilter", "$deviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
-                    } else {
-                        Log.d("MyLog", "Not enough data to calculate average RSSI or calibration not completed")
-                    }
+                    val kf = KalmanFilter(0.065, 1.4, 1.0, referenceRSSI)
+                    val filteredRssi = kf.getFilteredValue(deviceRssi.toDouble())
+                    val distance = calcDistance(filteredRssi)
+                    Log.d("MyLog", "$deviceName scanned. Rssi: $deviceRssi")
+                    Log.d("KalmanFilter", "$deviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
                 } else {
-                    Log.d("MyLog", "Null device was scanned")
+                    Log.d("errorLog", "Null device was scanned")
                 }
             } catch (e: SecurityException) {
                 // Handle SecurityException if needed
@@ -77,45 +75,29 @@ class bleScanActivity : AppCompatActivity() {
         }
     }
 
-    private fun addToRssiBufferAndAverage(rssi: Double): Double? {
-        rssiBuffer.add(rssi)
-        Log.d("RssiBuffer", "Element $rssi added, size is ${rssiBuffer.size}")
+    class KalmanFilter(
+        private val processNoise: Double,
+        private val sensorNoise: Double,
+        private val estimatedError: Double,
+        private val initialValue: Double
+    ) {
+        private var q: Double = processNoise
+        private var r: Double = sensorNoise
+        private var x: Double = initialValue
+        private var p: Double = estimatedError
+        private var k: Double = 0.0
 
-        if (rssiBuffer.size == 10) {
-            val average = rssiBuffer.average()
-            rssiBuffer.clear()
-            return average
+        fun getFilteredValue(measurement: Double): Double {
+            // Prediction phase
+            p += q
+
+            // Measurement update
+            k = p / (p + r)
+            x += k * (measurement - x)
+            p *= (1 - k)
+
+            return x
         }
-
-        return null
-    }
-
-    private fun calculateAt1m(rssi: Double) {
-        if (!calibrationCompleted) {
-            averageAt1mBuffer.add(rssi)
-            Log.d("Rssiat1m", "Element $rssi added, size is ${averageAt1mBuffer.size}")
-            if (averageAt1mBuffer.size == 50) {
-                val rssiAt1m = averageAt1mBuffer.average()
-                referenceRSSI = rssiAt1m
-                averageAt1mBuffer.clear()
-                calibrationCompleted = true
-            }
-        }
-    }
-
-    private fun KalmanFilter(rssi: Double): Double {
-        val Q = 0.00001 // process noise covariance constant
-        val R = 0.001 // measurement noise covariance constant
-        var P = 1.0 // estimate error covariance constant
-        val X = if (calibrationCompleted) {
-            referenceRSSI
-        } else {
-            rssi
-        }
-        val K = (P + Q) / (P + Q + R)
-        P = R * ((P + Q) / (P + Q + R))
-        val filteredRssi = X + K * (rssi - X)
-        return filteredRssi
     }
 
     private fun calcDistance(rssi: Double) {
@@ -124,6 +106,7 @@ class bleScanActivity : AppCompatActivity() {
         Log.d("distanceRssi", "Estimated distance $distance")
         Snackbar.make(binding.root, "Estimated distance: $distance", Snackbar.LENGTH_SHORT).show()
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -149,6 +132,9 @@ class bleScanActivity : AppCompatActivity() {
         val userPosition = Pair(1000f, 200f)
         indoorMapView.setUserPosition(userPosition)
     }
+
+
+
 
     override fun onResume() {
         super.onResume()
