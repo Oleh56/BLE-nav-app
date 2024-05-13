@@ -29,9 +29,9 @@ class bleScanActivity : AppCompatActivity() {
     private var btLeScanner: BluetoothLeScanner? = null
     private lateinit var binding: ActivityBleScanBinding
     private lateinit var rcAdapter: BDeviceAdapter
-    private val beacon1Arr = mutableListOf<Int>()
-    private val beacon2Arr = mutableListOf<Int>()
-    private val beacon3Arr = mutableListOf<Int>()
+    private val beaconRssiMap = mutableMapOf<String, Int>()
+    private val beaconDistanceMap = mutableMapOf<String, Double>()
+    private val beaconFilteredRssiMap = mutableMapOf<String, Double>()
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
@@ -46,33 +46,74 @@ class bleScanActivity : AppCompatActivity() {
 
     private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
     private val pathLossExponent = 2.0
+    private val averageAt1mBuffer = mutableListOf<Double>()
+    private val rssiBuffer = mutableListOf<Double>()
+    private var calibrationCompleted = false
+
+    private var deviceName: String? = null
+    private var deviceRssi: Int? = null
 
     private val scanLeCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
-            val deviceName: String?
-            val deviceRssi: Int?
+            val localDeviceName: String?
+            val localDeviceRssi: Int?
             try {
-                deviceName = result?.device?.name
-                deviceRssi = result?.rssi
-                if (
-                    (deviceName == "Beacon1" ||
-                    deviceName == "Beacon2") &&
-                    deviceRssi != null
-                    ) {
-                    rcAdapter.addDevice(BDevice(deviceName, deviceRssi))
-                    val kf = KalmanFilter(0.065, 1.4, 1.0, referenceRSSI)
-                    val filteredRssi = kf.getFilteredValue(deviceRssi.toDouble())
-                    val distance = calcDistance(filteredRssi)
-                    Log.d("MyLog", "$deviceName scanned. Rssi: $deviceRssi")
-                    Log.d("KalmanFilter", "$deviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
+                localDeviceName = result?.device?.name
+                localDeviceRssi = result?.rssi
+                if (localDeviceName != null && localDeviceRssi != null) {
+                    if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Beacon3") {
+                        beaconRssiMap[localDeviceName] = localDeviceRssi
+                        Log.d("MyLog", "$localDeviceName scanned. Rssi: $localDeviceRssi")
+                        val avgRssi = addToRssiBufferAndAverage(localDeviceRssi.toDouble())
+                        val kf = KalmanFilter(0.065, 1.4, 1.0, referenceRSSI)
+                        if (avgRssi != null) {
+                            val filteredRssi = kf.getFilteredValue(avgRssi.toDouble())
+                            beaconFilteredRssiMap[localDeviceName] = filteredRssi
+                            val distance = calcDistance(filteredRssi)
+                            beaconDistanceMap[localDeviceName] = distance
+                            Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
+                        } else {
+                            Log.d("errorLog", "avgRssi is null")
+                        }
+                        logAllBeaconData()
+                    } else {
+                        Log.d("errorLog", "Non-beacon device was scanned")
+                    }
                 } else {
-                    Log.d("errorLog", "Null device was scanned")
+                    Log.d("errorLog", "Null device or RSSI value was scanned")
                 }
             } catch (e: SecurityException) {
                 // Handle SecurityException if needed
             }
         }
+    }
+
+    private fun logAllBeaconData() {
+        val logMessage = StringBuilder()
+        beaconRssiMap.forEach { (name, rssi) ->
+            logMessage.append("$name: Rssi: $rssi, ")
+            beaconFilteredRssiMap[name]?.let { filteredRssi ->
+                logMessage.append("Filtered RSSI: $filteredRssi, ")
+            }
+            beaconDistanceMap[name]?.let { distance ->
+                logMessage.append("Distance: $distance, ")
+            }
+        }
+        Log.d("AllBeaconData", logMessage.toString())
+    }
+
+    private fun addToRssiBufferAndAverage(rssi: Double): Double? {
+        rssiBuffer.add(rssi)
+        Log.d("RssiBuffer", "${deviceName}: Element $rssi added, size is ${rssiBuffer.size}")
+
+        if (rssiBuffer.size == 10) {
+            val average = rssiBuffer.average()
+            rssiBuffer.clear()
+            return average
+        }
+
+        return null
     }
 
     class KalmanFilter(
@@ -100,11 +141,12 @@ class bleScanActivity : AppCompatActivity() {
         }
     }
 
-    private fun calcDistance(rssi: Double) {
+    private fun calcDistance(rssi: Double): Double {
         val distance = 10.0.pow((rssi - referenceRSSI) / (-10.0 * pathLossExponent))
-        Log.d("referenceRssi", "Reference rssi used: $referenceRSSI")
-        Log.d("distanceRssi", "Estimated distance $distance")
-        Snackbar.make(binding.root, "Estimated distance: $distance", Snackbar.LENGTH_SHORT).show()
+        Log.d("referenceRssi", "${deviceName}: Reference rssi used: $referenceRSSI")
+        Log.d("distanceRssi", "${deviceName}: Estimated distance $distance")
+        Snackbar.make(binding.root, "${deviceName}: Estimated distance: $distance", Snackbar.LENGTH_SHORT).show()
+        return distance
     }
 
 
