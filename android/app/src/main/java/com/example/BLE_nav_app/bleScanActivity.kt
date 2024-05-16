@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import com.google.android.material.snackbar.Snackbar
+import java.text.DecimalFormat
 import kotlin.math.pow
 
 class bleScanActivity : AppCompatActivity() {
@@ -30,6 +30,7 @@ class bleScanActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBleScanBinding
     private lateinit var rcAdapter: BDeviceAdapter
     private val beaconRssiMap = mutableMapOf<String, Int>()
+    private val rssiAvgBufferMap = mutableMapOf<String, MutableList<Double>>()
     private val beaconDistanceMap = mutableMapOf<String, Double>()
     private val beaconFilteredRssiMap = mutableMapOf<String, Double>()
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
@@ -45,7 +46,7 @@ class bleScanActivity : AppCompatActivity() {
         }
 
     private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
-    private val pathLossExponent = 2.0
+    private val pathLossExponent = 1.0
     private val averageAt1mBuffer = mutableListOf<Double>()
     private val rssiBuffer = mutableListOf<Double>()
     private var calibrationCompleted = false
@@ -62,54 +63,96 @@ class bleScanActivity : AppCompatActivity() {
                 localDeviceName = result?.device?.name
                 localDeviceRssi = result?.rssi
                 if (localDeviceName != null && localDeviceRssi != null) {
-                    if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Beacon3") {
-                        beaconRssiMap[localDeviceName] = localDeviceRssi
-                        Log.d("MyLog", "$localDeviceName scanned. Rssi: $localDeviceRssi")
-                        val avgRssi = addToRssiBufferAndAverage(localDeviceRssi.toDouble())
-                        val kf = KalmanFilter(0.065, 1.4, 1.0, referenceRSSI)
-                        if (avgRssi != null) {
-                            val filteredRssi = kf.getFilteredValue(avgRssi.toDouble())
-                            beaconFilteredRssiMap[localDeviceName] = filteredRssi
-                            val distance = calcDistance(filteredRssi)
-                            beaconDistanceMap[localDeviceName] = distance
-                            Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
-                        } else {
-                            Log.d("errorLog", "avgRssi is null")
-                        }
-                        logAllBeaconData()
-                    } else {
-                        Log.d("errorLog", "Non-beacon device was scanned")
+                    calibrateReferenceRSSI(localDeviceName, localDeviceRssi)
+                    if (calibrationCompleted) {
+                        processScanResult(localDeviceName, localDeviceRssi)
                     }
                 } else {
                     Log.d("errorLog", "Null device or RSSI value was scanned")
                 }
             } catch (e: SecurityException) {
                 // Handle SecurityException if needed
+                Log.e("SecurityException", "SecurityException occurred: ${e.message}")
             }
+        }
+    }
+
+    private fun processScanResult(localDeviceName: String, localDeviceRssi: Int) {
+        if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Redmi Note 8 Pro") {
+            deviceName = localDeviceName
+            deviceRssi = localDeviceRssi
+            rcAdapter.addDevice(BDevice(localDeviceName, localDeviceRssi))
+            beaconRssiMap[localDeviceName] = localDeviceRssi
+            Log.d("MyLog", "$localDeviceName scanned. Rssi: $localDeviceRssi")
+            val avgRssi = addToRssiBufferAndAverage(localDeviceName, localDeviceRssi.toDouble())
+            val kf = KalmanFilter(0.40, 1.0, 0.1, referenceRSSI)
+            if (avgRssi != null) {
+                val filteredRssi = kf.getFilteredValue(avgRssi.toDouble())
+                beaconFilteredRssiMap[localDeviceName] = filteredRssi
+                val distance = calcDistance(filteredRssi)
+                beaconDistanceMap[localDeviceName] = distance
+                Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
+            } else {
+                Log.d("errorLog", "avgRssi is null")
+            }
+            logAllBeaconData()
+        } else {
+            Log.d("errorLog", "Non-beacon device was scanned")
+        }
+    }
+
+    private fun startScanning() {
+        if (checkPermissions()) {
+            try {
+                btLeScanner?.startScan(scanLeCallback)
+            } catch (e: SecurityException) {
+                Log.d("MyLog", "Starting scanning failed: ${e.message}")
+            }
+        } else {
+            Log.d("MyLog", "Permissions not granted for scanning")
         }
     }
 
     private fun logAllBeaconData() {
         val logMessage = StringBuilder()
+        val decimalFormat = DecimalFormat("#.##")
+
         beaconRssiMap.forEach { (name, rssi) ->
             logMessage.append("$name: Rssi: $rssi, ")
             beaconFilteredRssiMap[name]?.let { filteredRssi ->
-                logMessage.append("Filtered RSSI: $filteredRssi, ")
+                val formattedFilteredRssi = decimalFormat.format(filteredRssi)
+                logMessage.append("Filtered RSSI: $formattedFilteredRssi, ")
             }
             beaconDistanceMap[name]?.let { distance ->
-                logMessage.append("Distance: $distance, ")
+                val formattedDistance = decimalFormat.format(distance)
+                logMessage.append("Distance: $formattedDistance, ")
             }
         }
         Log.d("AllBeaconData", logMessage.toString())
     }
 
-    private fun addToRssiBufferAndAverage(rssi: Double): Double? {
-        rssiBuffer.add(rssi)
-        Log.d("RssiBuffer", "${deviceName}: Element $rssi added, size is ${rssiBuffer.size}")
+    private fun calibrateReferenceRSSI(localDeviceName: String, localDeviceRssi: Int) {
+        if (localDeviceName == "Beacon1" && !calibrationCompleted) {
+            averageAt1mBuffer.add(localDeviceRssi.toDouble())
+            Log.d("Rssiat1m", "Element $localDeviceRssi added, size is ${averageAt1mBuffer.size}")
+            if (averageAt1mBuffer.size == 100) { // Adjust the buffer size as needed
+                referenceRSSI = averageAt1mBuffer.average()
+                averageAt1mBuffer.clear()
+                calibrationCompleted = true
+                Log.d("ReferenceRSSI", "Calibrated Reference RSSI: $referenceRSSI")
+                Snackbar.make(binding.root, "Calibration completed!", Snackbar.LENGTH_SHORT).show()
+            }
+        }
+    }
 
-        if (rssiBuffer.size == 10) {
-            val average = rssiBuffer.average()
-            rssiBuffer.clear()
+    private fun addToRssiBufferAndAverage(deviceName: String, rssi: Double): Double? {
+        val deviceBuffer = rssiAvgBufferMap.getOrPut(deviceName) { mutableListOf() }
+        deviceBuffer.add(rssi)
+        Log.d("RssiBuffer", "$deviceName: Element $rssi added, size is ${deviceBuffer.size}")
+
+        if (deviceBuffer.size == 10) {
+            val average = deviceBuffer.average()
+            deviceBuffer.clear()
             return average
         }
 
@@ -144,11 +187,9 @@ class bleScanActivity : AppCompatActivity() {
     private fun calcDistance(rssi: Double): Double {
         val distance = 10.0.pow((rssi - referenceRSSI) / (-10.0 * pathLossExponent))
         Log.d("referenceRssi", "${deviceName}: Reference rssi used: $referenceRSSI")
-        Log.d("distanceRssi", "${deviceName}: Estimated distance $distance")
         Snackbar.make(binding.root, "${deviceName}: Estimated distance: $distance", Snackbar.LENGTH_SHORT).show()
         return distance
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -164,28 +205,29 @@ class bleScanActivity : AppCompatActivity() {
         val mappedBeacon1Width = indoorMapView.mappedBeaconX
         val mappedBeacon1Height = indoorMapView.mappedBeaconY
 
-
         val beaconPositions = listOf(
             Pair(mappedBeacon1Height, mappedBeacon1Width),
-            Pair(450f, 540f),
+            Pair(450f, 540f), // Adjust as needed
         )
         indoorMapView.setBeaconPositions(beaconPositions)
 
-        val userPosition = Pair(1000f, 200f)
+        val userPosition = Pair(1000f, 200f) // Adjust as needed
         indoorMapView.setUserPosition(userPosition)
+
+        // Start scanning after calibration
+        startScanning()
     }
-
-
-
 
     override fun onResume() {
         super.onResume()
-        enableBt()
-        try {
-            btLeScanner?.startScan(null, getScanSettings(), scanLeCallback)
-            Log.d("MyLog", "Scanned Successful")
-        } catch (e: SecurityException) {
-            Log.d("MyLog", "Starting scanning failed")
+        enableBluetooth()
+    }
+
+    private fun enableBluetooth() {
+        if (btAdapter?.isEnabled == false) {
+            enableBtLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+        } else {
+            startScanning()
         }
     }
 
@@ -195,21 +237,25 @@ class bleScanActivity : AppCompatActivity() {
         btLeScanner = btAdapter?.bluetoothLeScanner
     }
 
-    private fun enableBt() {
-        if (btAdapter?.isEnabled == false) {
-            enableBtLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+    private fun checkPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+                    && ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) == PackageManager.PERMISSION_GRANTED
+                    && ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         }
-    }
-
-    private fun getScanSettings(): ScanSettings {
-        val scanBuilder = ScanSettings.Builder()
-        scanBuilder
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
-            .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
-            .setReportDelay(0L)
-        return scanBuilder.build()
     }
 
     private fun initRcView() = with(binding) {
@@ -219,7 +265,7 @@ class bleScanActivity : AppCompatActivity() {
     }
 
     private fun preLaunchPermissions() {
-        if (!checkPerm()) {
+        if (!checkPermissions()) {
             launchCheckPermissions()
         }
     }
@@ -239,27 +285,6 @@ class bleScanActivity : AppCompatActivity() {
                     Manifest.permission.ACCESS_FINE_LOCATION
                 )
             )
-        }
-    }
-
-    private fun checkPerm(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-                    && ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED
-                    && ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 }
