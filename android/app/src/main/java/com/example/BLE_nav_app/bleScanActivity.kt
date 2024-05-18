@@ -21,8 +21,8 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import com.google.android.material.snackbar.Snackbar
-import java.text.DecimalFormat
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 class bleScanActivity : AppCompatActivity() {
     private var btAdapter: BluetoothAdapter? = null
@@ -33,6 +33,13 @@ class bleScanActivity : AppCompatActivity() {
     private val rssiAvgBufferMap = mutableMapOf<String, MutableList<Double>>()
     private val beaconDistanceMap = mutableMapOf<String, Double>()
     private val beaconFilteredRssiMap = mutableMapOf<String, Double>()
+    val beaconCoordinatesMap = mapOf(
+        "Beacon1" to Pair(5.1, 2.8),
+        "Beacon2" to Pair(0.35, 1.4),
+        "Beacon3" to Pair(3.1, 0.3)
+    )
+    data class RangedBeaconData(val x: Double, val y: Double)
+
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
@@ -46,10 +53,10 @@ class bleScanActivity : AppCompatActivity() {
         }
 
     private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
-    private val pathLossExponent = 1.0
+    private val pathLossExponent = 2.0
     private val averageAt1mBuffer = mutableListOf<Double>()
     private val rssiBuffer = mutableListOf<Double>()
-    private var calibrationCompleted = false
+    private var calibrationCompleted = true
 
     private var deviceName: String? = null
     private var deviceRssi: Int? = null
@@ -63,7 +70,7 @@ class bleScanActivity : AppCompatActivity() {
                 localDeviceName = result?.device?.name
                 localDeviceRssi = result?.rssi
                 if (localDeviceName != null && localDeviceRssi != null) {
-                    calibrateReferenceRSSI(localDeviceName, localDeviceRssi)
+//                    calibrateReferenceRSSI(localDeviceName, localDeviceRssi)
                     if (calibrationCompleted) {
                         processScanResult(localDeviceName, localDeviceRssi)
                     }
@@ -78,7 +85,7 @@ class bleScanActivity : AppCompatActivity() {
     }
 
     private fun processScanResult(localDeviceName: String, localDeviceRssi: Int) {
-        if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Redmi Note 8 Pro") {
+        if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Beacon3") {
             deviceName = localDeviceName
             deviceRssi = localDeviceRssi
             rcAdapter.addDevice(BDevice(localDeviceName, localDeviceRssi))
@@ -91,6 +98,20 @@ class bleScanActivity : AppCompatActivity() {
                 beaconFilteredRssiMap[localDeviceName] = filteredRssi
                 val distance = calcDistance(filteredRssi)
                 beaconDistanceMap[localDeviceName] = distance
+                rcAdapter.addDevice(BDevice(localDeviceName, distance.toInt()))
+                if(beaconDistanceMap.size > 3){
+                    binding.tvDistance1.setText(beaconDistanceMap["Beacon1"].toString())
+                    binding.tvDistance2.setText(beaconDistanceMap["Beacon2"].toString())
+                    binding.tvDistance3.setText(beaconDistanceMap["Beacon3"].toString())
+                }
+
+//                beaconCoordinatesMap[localDeviceName]
+//                if(beaconDistanceMap.size >= 3 ) {
+//                    val beacon1 = beaconDistanceMap["Beacon1"]
+//                    val beacon2 = beaconDistanceMap["Beacon2"]
+//                    val beacon3 = beaconDistanceMap["Beacon3"]
+//                } else Log.d("errorLog", "BeaconDistance map isn't filled enough")
+
                 Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
             } else {
                 Log.d("errorLog", "avgRssi is null")
@@ -115,18 +136,17 @@ class bleScanActivity : AppCompatActivity() {
 
     private fun logAllBeaconData() {
         val logMessage = StringBuilder()
-        val decimalFormat = DecimalFormat("#.##")
 
         beaconRssiMap.forEach { (name, rssi) ->
             logMessage.append("$name: Rssi: $rssi, ")
             beaconFilteredRssiMap[name]?.let { filteredRssi ->
-                val formattedFilteredRssi = decimalFormat.format(filteredRssi)
+                val formattedFilteredRssi = filteredRssi.roundToInt()
                 logMessage.append("Filtered RSSI: $formattedFilteredRssi, ")
             }
-            beaconDistanceMap[name]?.let { distance ->
-                val formattedDistance = decimalFormat.format(distance)
-                logMessage.append("Distance: $formattedDistance, ")
-            }
+//            beaconDistanceMap[name]?.let { distance ->
+//                val formattedDistance = distance
+//                logMessage.append("Distance: $formattedDistance, ")
+//            }
         }
         Log.d("AllBeaconData", logMessage.toString())
     }
@@ -190,6 +210,28 @@ class bleScanActivity : AppCompatActivity() {
         Snackbar.make(binding.root, "${deviceName}: Estimated distance: $distance", Snackbar.LENGTH_SHORT).show()
         return distance
     }
+
+    fun trilaterationPosition(
+        rbd1: RangedBeaconData,
+        rbd2: RangedBeaconData,
+        rbd3: RangedBeaconData,
+        distance1: Double,
+        distance2: Double,
+        distance3: Double
+    ): Map<String, Double> {
+        val a = (-2 * rbd1.x) + (2 * rbd2.x)
+        val b = (-2 * rbd1.y) + (2 * rbd2.y)
+        val c = distance1.pow(2) - distance2.pow(2) - rbd1.x.pow(2) + rbd2.x.pow(2) - rbd1.y.pow(2) + rbd2.y.pow(2)
+        val d = (-2 * rbd2.x) + (2 * rbd3.x)
+        val e = (-2 * rbd2.y) + (2 * rbd3.y)
+        val f = distance2.pow(2) - distance3.pow(2) - rbd2.x.pow(2) + rbd3.x.pow(2) - rbd2.y.pow(2) + rbd3.y.pow(2)
+
+        val x = (c * e - f * b) / (e * a - b * d)
+        val y = (c * d - a * f) / (b * d - a * e)
+
+        return mapOf("x" to x, "y" to y)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

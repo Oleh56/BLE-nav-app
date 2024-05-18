@@ -20,8 +20,8 @@ object RedirToActivity {
         val intent = Intent(context, LoginActivity::class.java)
         context.startActivity(intent)
     }
-    fun redirectToMediaRecordActivity(context: Context){
-        val intent = Intent(context, AudioRecord::class.java)
-        context.startActivity(intent)
-    }
+//    fun redirectToMediaRecordActivity(context: Context){
+//        val intent = Intent(context, AudioRecord::class.java)
+//        context.startActivity(intent)
+//    }
 }

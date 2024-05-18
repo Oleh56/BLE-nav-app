@@ -70,9 +70,7 @@ class LoginActivity : AppCompatActivity() {
         binding.btNavigation.setOnClickListener(){
             RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
         }
-        binding.btnAudio.setOnClickListener(){
-            RedirToActivity.redirectToMediaRecordActivity(this@LoginActivity)
-        }
+
     }
 
     private fun isValidEmail(email: String): Boolean {
