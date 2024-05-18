@@ -63,4 +63,5 @@ dependencies {
     //KalmanFilter
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'com.github.jiahuanyu:SVGMapView:e327441'
+    implementation 'com.github.japgolly.android:svg-android:2.0.6'
 }

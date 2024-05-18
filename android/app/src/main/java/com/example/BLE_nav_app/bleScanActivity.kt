@@ -18,11 +18,12 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import com.google.android.material.snackbar.Snackbar
+import com.jiahuan.svgmapview.SVGMapView
 import kotlin.math.pow
 import kotlin.math.roundToInt
+
 
 class bleScanActivity : AppCompatActivity() {
     private var btAdapter: BluetoothAdapter? = null
@@ -33,12 +34,15 @@ class bleScanActivity : AppCompatActivity() {
     private val rssiAvgBufferMap = mutableMapOf<String, MutableList<Double>>()
     private val beaconDistanceMap = mutableMapOf<String, Double>()
     private val beaconFilteredRssiMap = mutableMapOf<String, Double>()
+    private lateinit var svgMapView: SVGMapView
+
     val beaconCoordinatesMap = mapOf(
         "Beacon1" to Pair(5.1, 2.8),
         "Beacon2" to Pair(0.35, 1.4),
         "Beacon3" to Pair(3.1, 0.3)
     )
     data class RangedBeaconData(val x: Double, val y: Double)
+    data class BeaconPosition(val x: Double, val y: Double)
 
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
@@ -98,12 +102,7 @@ class bleScanActivity : AppCompatActivity() {
                 beaconFilteredRssiMap[localDeviceName] = filteredRssi
                 val distance = calcDistance(filteredRssi)
                 beaconDistanceMap[localDeviceName] = distance
-                rcAdapter.addDevice(BDevice(localDeviceName, distance.toInt()))
-                if(beaconDistanceMap.size > 3){
-                    binding.tvDistance1.setText(beaconDistanceMap["Beacon1"].toString())
-                    binding.tvDistance2.setText(beaconDistanceMap["Beacon2"].toString())
-                    binding.tvDistance3.setText(beaconDistanceMap["Beacon3"].toString())
-                }
+
 
 //                beaconCoordinatesMap[localDeviceName]
 //                if(beaconDistanceMap.size >= 3 ) {
@@ -237,28 +236,24 @@ class bleScanActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBleScanBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        initRcView()
         initBt()
         preLaunchPermissions()
 
         // Initialize IndoorMapView
-        val indoorMapView = binding.indoorMapView
+        svgMapView = binding.svgMapView
 
-        val mappedBeacon1Width = indoorMapView.mappedBeaconX
-        val mappedBeacon1Height = indoorMapView.mappedBeaconY
-
-        val beaconPositions = listOf(
-            Pair(mappedBeacon1Height, mappedBeacon1Width),
-            Pair(450f, 540f), // Adjust as needed
-        )
-        indoorMapView.setBeaconPositions(beaconPositions)
-
-        val userPosition = Pair(1000f, 200f) // Adjust as needed
-        indoorMapView.setUserPosition(userPosition)
+        svgMapView.loadMap(AssetsHelper.getContent(this, "test.svg"))
+//        val userPosition = BeaconPosition(100.00, 200.00)
+//        val userPointF = PointF(userPosition.x.toFloat(), userPosition.y.toFloat())
+//        val locationOverlay = SVGMapLocationOverlay(svgMapView)
+////        locationOverlay.setIndicatorArrowBitmap(R.drawable.compass_needle) глянути що це
+//        locationOverlay.setPosition(userPointF)
+//        svgMapView.refresh()
 
         // Start scanning after calibration
         startScanning()
     }
+
 
     override fun onResume() {
         super.onResume()
@@ -300,11 +295,11 @@ class bleScanActivity : AppCompatActivity() {
         }
     }
 
-    private fun initRcView() = with(binding) {
-        rcView.layoutManager = LinearLayoutManager(this@bleScanActivity)
-        rcAdapter = BDeviceAdapter(ArrayList())
-        rcView.adapter = rcAdapter
-    }
+//    private fun initRcView() = with(binding) {
+//        rcView.layoutManager = LinearLayoutManager(this@bleScanActivity)
+//        rcAdapter = BDeviceAdapter(ArrayList())
+//        rcView.adapter = rcAdapter
+//    }
 
     private fun preLaunchPermissions() {
         if (!checkPermissions()) {
