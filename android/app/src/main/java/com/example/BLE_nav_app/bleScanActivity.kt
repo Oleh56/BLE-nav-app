@@ -10,6 +10,8 @@ import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.PointF
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -21,6 +23,11 @@ import androidx.core.content.ContextCompat
 import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import com.google.android.material.snackbar.Snackbar
 import com.jiahuan.svgmapview.SVGMapView
+import com.jiahuan.svgmapview.overlay.SVGMapLocationOverlay
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -29,20 +36,22 @@ class bleScanActivity : AppCompatActivity() {
     private var btAdapter: BluetoothAdapter? = null
     private var btLeScanner: BluetoothLeScanner? = null
     private lateinit var binding: ActivityBleScanBinding
-    private lateinit var rcAdapter: BDeviceAdapter
     private val beaconRssiMap = mutableMapOf<String, Int>()
     private val rssiAvgBufferMap = mutableMapOf<String, MutableList<Double>>()
     private val beaconDistanceMap = mutableMapOf<String, Double>()
     private val beaconFilteredRssiMap = mutableMapOf<String, Double>()
     private lateinit var svgMapView: SVGMapView
+    private lateinit var locationOverlay: SVGMapLocationOverlay
+    private lateinit var userPosition: PointF
+    private var trilaterationCounter = 0
 
     val beaconCoordinatesMap = mapOf(
-        "Beacon1" to Pair(5.1, 2.8),
-        "Beacon2" to Pair(0.35, 1.4),
-        "Beacon3" to Pair(3.1, 0.3)
+        "Beacon1" to Pair(0.0, 0.0),
+        "Beacon2" to Pair(30.0, 360.0),
+        "Beacon3" to Pair(600.0, 360.0)
     )
     data class RangedBeaconData(val x: Double, val y: Double)
-    data class BeaconPosition(val x: Double, val y: Double)
+    data class UserPosition(val x: Double, val y: Double)
 
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
@@ -56,7 +65,7 @@ class bleScanActivity : AppCompatActivity() {
             }
         }
 
-    private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
+    private var referenceRSSI = -64.0 // estimated RSSI at 1 meter
     private val pathLossExponent = 2.0
     private val averageAt1mBuffer = mutableListOf<Double>()
     private val rssiBuffer = mutableListOf<Double>()
@@ -92,7 +101,6 @@ class bleScanActivity : AppCompatActivity() {
         if (localDeviceName == "Beacon1" || localDeviceName == "Beacon2" || localDeviceName == "Beacon3") {
             deviceName = localDeviceName
             deviceRssi = localDeviceRssi
-            rcAdapter.addDevice(BDevice(localDeviceName, localDeviceRssi))
             beaconRssiMap[localDeviceName] = localDeviceRssi
             Log.d("MyLog", "$localDeviceName scanned. Rssi: $localDeviceRssi")
             val avgRssi = addToRssiBufferAndAverage(localDeviceName, localDeviceRssi.toDouble())
@@ -103,13 +111,39 @@ class bleScanActivity : AppCompatActivity() {
                 val distance = calcDistance(filteredRssi)
                 beaconDistanceMap[localDeviceName] = distance
 
+//                val telemetryData = buildString {
+//                    append("rssi$localDeviceName:$localDeviceRssi")
+//                    append("frssi$localDeviceName:${filteredRssi.roundToInt()};")
+//                    append("d$localDeviceName:$distance;")
+//                }
+//                UDPSenderTask().execute(telemetryData)
 
-//                beaconCoordinatesMap[localDeviceName]
-//                if(beaconDistanceMap.size >= 3 ) {
-//                    val beacon1 = beaconDistanceMap["Beacon1"]
-//                    val beacon2 = beaconDistanceMap["Beacon2"]
-//                    val beacon3 = beaconDistanceMap["Beacon3"]
-//                } else Log.d("errorLog", "BeaconDistance map isn't filled enough")
+                if (beaconDistanceMap.size >= 3) {
+                    val rbd1 = RangedBeaconData(beaconCoordinatesMap["Beacon1"]!!.first, beaconCoordinatesMap["Beacon1"]!!.second)
+                    val rbd2 = RangedBeaconData(beaconCoordinatesMap["Beacon2"]!!.first, beaconCoordinatesMap["Beacon2"]!!.second)
+                    val rbd3 = RangedBeaconData(beaconCoordinatesMap["Beacon3"]!!.first, beaconCoordinatesMap["Beacon3"]!!.second)
+                    val distance1 = beaconDistanceMap["Beacon1"] ?: 0.0
+                    val distance2 = beaconDistanceMap["Beacon2"] ?: 0.0
+                    val distance3 = beaconDistanceMap["Beacon3"] ?: 0.0
+                    val position = trilaterationPosition(rbd1, rbd2, rbd3, distance1*100, distance2*100, distance3*100)
+                    var x = position["x"] ?: 0.0
+                    var y = position["y"] ?: 0.0
+
+                    // Increment the counter
+                    trilaterationCounter++
+
+                    // Modify position after a few iterations
+                    if (trilaterationCounter > 5) { // Every 5 iterations
+                        x += 50.0 // Add 50 to x
+                        y += 50.0 // Add 50 to y
+                    }
+
+                    userPosition = PointF(x.toFloat(), y.toFloat())
+                    updateUserPosition(userPosition)
+                    Log.d("Trilateration", "User position: (${position["x"]}, ${position["y"]})")
+                } else {
+                    Log.d("Trilateration", "Insufficient beacons detected for trilateration")
+                }
 
                 Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
             } else {
@@ -138,16 +172,17 @@ class bleScanActivity : AppCompatActivity() {
 
         beaconRssiMap.forEach { (name, rssi) ->
             logMessage.append("$name: Rssi: $rssi, ")
+            UDPSenderTask().execute("$name:$rssi")
             beaconFilteredRssiMap[name]?.let { filteredRssi ->
                 val formattedFilteredRssi = filteredRssi.roundToInt()
                 logMessage.append("Filtered RSSI: $formattedFilteredRssi, ")
             }
 //            beaconDistanceMap[name]?.let { distance ->
-//                val formattedDistance = distance
-//                logMessage.append("Distance: $formattedDistance, ")
+//                logMessage.append("Distance: $distance, ")
 //            }
         }
         Log.d("AllBeaconData", logMessage.toString())
+
     }
 
     private fun calibrateReferenceRSSI(localDeviceName: String, localDeviceRssi: Int) {
@@ -231,6 +266,28 @@ class bleScanActivity : AppCompatActivity() {
         return mapOf("x" to x, "y" to y)
     }
 
+    private class UDPSenderTask : AsyncTask<String, Void, Void>() {
+
+        override fun doInBackground(vararg params: String?): Void? {
+            val message = params[0]
+            val port = 9488
+            val address = "teleplot.fr"
+
+            try {
+                val socket = DatagramSocket()
+                val ipAddress = InetAddress.getByName(address)
+                val sendData = message?.toByteArray()
+                val sendPacket = DatagramPacket(sendData, sendData?.size ?: 0, ipAddress, port)
+                socket.send(sendPacket)
+                socket.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            return null
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -241,17 +298,39 @@ class bleScanActivity : AppCompatActivity() {
 
         // Initialize IndoorMapView
         svgMapView = binding.svgMapView
-
         svgMapView.loadMap(AssetsHelper.getContent(this, "test.svg"))
-//        val userPosition = BeaconPosition(100.00, 200.00)
-//        val userPointF = PointF(userPosition.x.toFloat(), userPosition.y.toFloat())
-//        val locationOverlay = SVGMapLocationOverlay(svgMapView)
-////        locationOverlay.setIndicatorArrowBitmap(R.drawable.compass_needle) глянути що це
-//        locationOverlay.setPosition(userPointF)
-//        svgMapView.refresh()
+
+        // Set initial position
+        locationOverlay = SVGMapLocationOverlay(svgMapView)
+        userPosition = PointF(200.0f, 100.0f)
+        locationOverlay.setPosition(userPosition)
+        svgMapView.overLays.add(locationOverlay)
+        svgMapView.refresh()
 
         // Start scanning after calibration
         startScanning()
+    }
+
+    fun updateUserPosition(userPointF: PointF) {
+        val mapWidth = 600.0f
+        val mapHeight = 360.0f
+
+        if (userPointF != PointF(0.0f, 0.0f)) {
+            // Reduce precision to one digit after the decimal point using Locale.US
+            val reducedPrecisionPoint = PointF(
+                String.format(Locale.US, "%.1f", userPointF.x).toFloat(),
+                String.format(Locale.US, "%.1f", userPointF.y).toFloat()
+            )
+
+            // Check if the point is within map bounds
+            if (reducedPrecisionPoint.x in 0.0f..mapWidth && reducedPrecisionPoint.y in 0.0f..mapHeight) {
+                locationOverlay.setPosition(reducedPrecisionPoint)
+                svgMapView.refresh()
+                Log.d("updateUserPosition", "User position: $reducedPrecisionPoint")
+            } else {
+                Log.w("updateUserPosition", "User position is out of map bounds: $reducedPrecisionPoint (map width=$mapWidth, map height=$mapHeight)")
+            }
+        }
     }
 
 

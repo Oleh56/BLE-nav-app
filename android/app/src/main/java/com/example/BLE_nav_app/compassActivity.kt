@@ -5,8 +5,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.example.BLE_nav_app.databinding.ActivityCompassBinding
 
 class compassActivity : AppCompatActivity(), SensorEventListener {
@@ -20,6 +20,11 @@ class compassActivity : AppCompatActivity(), SensorEventListener {
     private val floatOrientation = FloatArray(3)
     private val floatRotationMatrix = FloatArray(9)
     private val ALPHA = 0.1f
+
+    interface CompassCallback {
+        fun onRotationAngleChanged(angle: Float)
+    }
+    private var compassCallback: CompassCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +52,7 @@ class compassActivity : AppCompatActivity(), SensorEventListener {
                 SensorManager.getOrientation(floatRotationMatrix, floatOrientation)
 
                 binding.compassNeedle.rotation = (-(floatOrientation[0] * 180 / Math.PI)).toFloat()
+
             }
 
             override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
@@ -64,6 +70,7 @@ class compassActivity : AppCompatActivity(), SensorEventListener {
                 SensorManager.getOrientation(floatRotationMatrix, floatOrientation)
 
                 binding.compassNeedle.rotation = (-(floatOrientation[0] * 180 / Math.PI)).toFloat()
+                compassCallback?.onRotationAngleChanged(-(floatOrientation[0] * 180 / Math.PI).toFloat())
             }
 
             override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
