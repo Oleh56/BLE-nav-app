@@ -46,9 +46,9 @@ class bleScanActivity : AppCompatActivity() {
     private var trilaterationCounter = 0
 
     val beaconCoordinatesMap = mapOf(
-        "Beacon1" to Pair(0.0, 0.0),
-        "Beacon2" to Pair(30.0, 360.0),
-        "Beacon3" to Pair(600.0, 360.0)
+        "Beacon1" to Pair(50.0, 230.0),
+        "Beacon2" to Pair(0.0, 0.0),
+        "Beacon3" to Pair(160.0, 0.0)
     )
     data class RangedBeaconData(val x: Double, val y: Double)
     data class UserPosition(val x: Double, val y: Double)
@@ -65,8 +65,8 @@ class bleScanActivity : AppCompatActivity() {
             }
         }
 
-    private var referenceRSSI = -64.0 // estimated RSSI at 1 meter
-    private val pathLossExponent = 2.0
+    private var referenceRSSI = -70.0 // estimated RSSI at 1 meter
+    private val pathLossExponent = 2.5
     private val averageAt1mBuffer = mutableListOf<Double>()
     private val rssiBuffer = mutableListOf<Double>()
     private var calibrationCompleted = true
@@ -102,11 +102,9 @@ class bleScanActivity : AppCompatActivity() {
             deviceName = localDeviceName
             deviceRssi = localDeviceRssi
             beaconRssiMap[localDeviceName] = localDeviceRssi
-            Log.d("MyLog", "$localDeviceName scanned. Rssi: $localDeviceRssi")
-            val avgRssi = addToRssiBufferAndAverage(localDeviceName, localDeviceRssi.toDouble())
-            val kf = KalmanFilter(0.40, 1.0, 0.1, referenceRSSI)
-            if (avgRssi != null) {
-                val filteredRssi = kf.getFilteredValue(avgRssi.toDouble())
+            Log.d("MyLog", "$beaconRssiMap scanned")
+            val kf = KalmanFilter(1.0, 1.0, 0.5, referenceRSSI)
+                val filteredRssi = kf.getFilteredValue(localDeviceRssi.toDouble())
                 beaconFilteredRssiMap[localDeviceName] = filteredRssi
                 val distance = calcDistance(filteredRssi)
                 beaconDistanceMap[localDeviceName] = distance
@@ -129,14 +127,14 @@ class bleScanActivity : AppCompatActivity() {
                     var x = position["x"] ?: 0.0
                     var y = position["y"] ?: 0.0
 
-                    // Increment the counter
-                    trilaterationCounter++
-
-                    // Modify position after a few iterations
-                    if (trilaterationCounter > 5) { // Every 5 iterations
-                        x += 50.0 // Add 50 to x
-                        y += 50.0 // Add 50 to y
-                    }
+//                    // Increment the counter
+//                    trilaterationCounter++
+//
+//                    // Modify position after a few iterations
+//                    if (trilaterationCounter > 5) { // Every 5 iterations
+//                        x += 50.0 // Add 50 to x
+//                        y += 50.0 // Add 50 to y
+//                    }
 
                     userPosition = PointF(x.toFloat(), y.toFloat())
                     updateUserPosition(userPosition)
@@ -146,14 +144,10 @@ class bleScanActivity : AppCompatActivity() {
                 }
 
                 Log.d("KalmanFilter", "$localDeviceName scanned. Filtered rssi: ${filteredRssi.toInt()}")
-            } else {
-                Log.d("errorLog", "avgRssi is null")
             }
             logAllBeaconData()
-        } else {
-            Log.d("errorLog", "Non-beacon device was scanned")
         }
-    }
+
 
     private fun startScanning() {
         if (checkPermissions()) {
@@ -209,8 +203,7 @@ class bleScanActivity : AppCompatActivity() {
             deviceBuffer.clear()
             return average
         }
-
-        return null
+        return 0.0
     }
 
     class KalmanFilter(
@@ -312,8 +305,8 @@ class bleScanActivity : AppCompatActivity() {
     }
 
     fun updateUserPosition(userPointF: PointF) {
-        val mapWidth = 600.0f
-        val mapHeight = 360.0f
+        val mapWidth = 60000.0f
+        val mapHeight = 36000.0f
 
         if (userPointF != PointF(0.0f, 0.0f)) {
             // Reduce precision to one digit after the decimal point using Locale.US
