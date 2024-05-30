@@ -1,10 +1,10 @@
 package com.example.BLE_nav_app
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 import com.example.BLE_nav_app.databinding.ActivityNavigationBinding
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
@@ -86,6 +86,10 @@ class NavigationActivity : AppCompatActivity(), PermissionsListener {
                     .bearing(-50.0)
                     .build()
             )
+        }
+
+        binding.btnFloorMap.setOnClickListener(){
+            RedirToActivity.redirectToBleScanActivity(this)
         }
 
 

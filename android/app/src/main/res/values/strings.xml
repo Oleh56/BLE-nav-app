@@ -8,5 +8,6 @@
     <string name="btn_guest">Я відвідувач</string>
     <string name="btn_audio">Аудіо</string>
     <string name="estimated_distance">Estimated distance:</string>
-
+    <string name="button_text_my_geo">Моя локація</string>
+    <string name="btn_floor_map">Мапа поверху</string>
 </resources>

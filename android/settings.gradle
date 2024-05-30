@@ -6,6 +6,7 @@ pluginManagement {
         maven { url 'https://jitpack.io' }
     }
 }
+def mapboxDownloadsToken = rootProject.hasProperty('MAPBOX_DOWNLOADS_TOKEN') ? rootProject.property('MAPBOX_DOWNLOADS_TOKEN') : ""
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -18,7 +19,7 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             credentials.username = "mapbox"
-            credentials.password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN").get()
+            credentials.password = mapboxDownloadsToken
             authentication { basic(BasicAuthentication) }
         }
         maven { url 'https://jitpack.io' }

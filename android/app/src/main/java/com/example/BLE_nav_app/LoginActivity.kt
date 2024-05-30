@@ -61,13 +61,6 @@ class LoginActivity : AppCompatActivity() {
         }
 
         binding.guestButton.setOnClickListener(){
-            RedirToActivity.redirectToBleScanActivity(this@LoginActivity)
-        }
-
-        binding.btCompass.setOnClickListener(){
-            RedirToActivity.redirectToCompassActivity(this@LoginActivity)
-        }
-        binding.btNavigation.setOnClickListener(){
             RedirToActivity.redirectToNavigationActivity(this@LoginActivity)
         }
 

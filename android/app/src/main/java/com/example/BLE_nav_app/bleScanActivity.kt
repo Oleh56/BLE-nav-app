@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.PointF
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -24,9 +23,6 @@ import com.example.BLE_nav_app.databinding.ActivityBleScanBinding
 import com.google.android.material.snackbar.Snackbar
 import com.jiahuan.svgmapview.SVGMapView
 import com.jiahuan.svgmapview.overlay.SVGMapLocationOverlay
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
 import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -43,7 +39,7 @@ class bleScanActivity : AppCompatActivity() {
     private lateinit var svgMapView: SVGMapView
     private lateinit var locationOverlay: SVGMapLocationOverlay
     private lateinit var userPosition: PointF
-    private var trilaterationCounter = 0
+//    private var trilaterationCounter = 0
 
     val beaconCoordinatesMap = mapOf(
         "Beacon1" to Pair(50.0, 230.0),
@@ -51,7 +47,7 @@ class bleScanActivity : AppCompatActivity() {
         "Beacon3" to Pair(160.0, 0.0)
     )
     data class RangedBeaconData(val x: Double, val y: Double)
-    data class UserPosition(val x: Double, val y: Double)
+//    data class UserPosition(val x: Double, val y: Double)
 
     private val permissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
@@ -108,14 +104,6 @@ class bleScanActivity : AppCompatActivity() {
                 beaconFilteredRssiMap[localDeviceName] = filteredRssi
                 val distance = calcDistance(filteredRssi)
                 beaconDistanceMap[localDeviceName] = distance
-
-//                val telemetryData = buildString {
-//                    append("rssi$localDeviceName:$localDeviceRssi")
-//                    append("frssi$localDeviceName:${filteredRssi.roundToInt()};")
-//                    append("d$localDeviceName:$distance;")
-//                }
-//                UDPSenderTask().execute(telemetryData)
-
                 if (beaconDistanceMap.size >= 3) {
                     val rbd1 = RangedBeaconData(beaconCoordinatesMap["Beacon1"]!!.first, beaconCoordinatesMap["Beacon1"]!!.second)
                     val rbd2 = RangedBeaconData(beaconCoordinatesMap["Beacon2"]!!.first, beaconCoordinatesMap["Beacon2"]!!.second)
@@ -126,15 +114,6 @@ class bleScanActivity : AppCompatActivity() {
                     val position = trilaterationPosition(rbd1, rbd2, rbd3, distance1*100, distance2*100, distance3*100)
                     var x = position["x"] ?: 0.0
                     var y = position["y"] ?: 0.0
-
-//                    // Increment the counter
-//                    trilaterationCounter++
-//
-//                    // Modify position after a few iterations
-//                    if (trilaterationCounter > 5) { // Every 5 iterations
-//                        x += 50.0 // Add 50 to x
-//                        y += 50.0 // Add 50 to y
-//                    }
 
                     userPosition = PointF(x.toFloat(), y.toFloat())
                     updateUserPosition(userPosition)
@@ -166,7 +145,6 @@ class bleScanActivity : AppCompatActivity() {
 
         beaconRssiMap.forEach { (name, rssi) ->
             logMessage.append("$name: Rssi: $rssi, ")
-            UDPSenderTask().execute("$name:$rssi")
             beaconFilteredRssiMap[name]?.let { filteredRssi ->
                 val formattedFilteredRssi = filteredRssi.roundToInt()
                 logMessage.append("Filtered RSSI: $formattedFilteredRssi, ")
@@ -259,27 +237,6 @@ class bleScanActivity : AppCompatActivity() {
         return mapOf("x" to x, "y" to y)
     }
 
-    private class UDPSenderTask : AsyncTask<String, Void, Void>() {
-
-        override fun doInBackground(vararg params: String?): Void? {
-            val message = params[0]
-            val port = 9488
-            val address = "teleplot.fr"
-
-            try {
-                val socket = DatagramSocket()
-                val ipAddress = InetAddress.getByName(address)
-                val sendData = message?.toByteArray()
-                val sendPacket = DatagramPacket(sendData, sendData?.size ?: 0, ipAddress, port)
-                socket.send(sendPacket)
-                socket.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            return null
-        }
-    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -291,7 +248,7 @@ class bleScanActivity : AppCompatActivity() {
 
         // Initialize IndoorMapView
         svgMapView = binding.svgMapView
-        svgMapView.loadMap(AssetsHelper.getContent(this, "test.svg"))
+        svgMapView.loadMap(AssetsHelper.getContent(this, "MAP2.svg"))
 
         // Set initial position
         locationOverlay = SVGMapLocationOverlay(svgMapView)
@@ -305,8 +262,8 @@ class bleScanActivity : AppCompatActivity() {
     }
 
     fun updateUserPosition(userPointF: PointF) {
-        val mapWidth = 60000.0f
-        val mapHeight = 36000.0f
+        val mapWidth = 150200.0f
+        val mapHeight = 42200.0f
 
         if (userPointF != PointF(0.0f, 0.0f)) {
             // Reduce precision to one digit after the decimal point using Locale.US

@@ -21,7 +21,8 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            resValue "string", "mapbox_access_token", "pk.eyJ1Ijoib2xlaDU2IiwiYSI6ImNscHIwZ3h6MzA2cGgyanBreWs3aXp3djIifQ.9VerPx_MNl2iOrCNQ8xa4Q"}
+            resValue "string", "mapbox_access_token", "\"" + project.findProperty("MAPBOX_ACCESS_TOKEN") + "\""
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -43,7 +44,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.activity:activity:1.8.0'
     implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
-    implementation files('/home/oleh/StudioProjects/BLE-nav-app/android/app/libs/KalmanKt-jvm-1.0.0.jar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
@@ -57,9 +57,6 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
     //mapbox (if compose will be used, add specific mapbox dependence for it)
     implementation 'com.mapbox.maps:android:11.0.0'
-    //audio
-    implementation 'be.tarsos.dsp:core:2.5'
-    implementation 'be.tarsos.dsp:jvm:2.5'
     //KalmanFilter
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'com.github.jiahuanyu:SVGMapView:e327441'
