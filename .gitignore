@@ -13,7 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
-gradle.properties
+android/gradle.properties
 
 # Ignore Gradle build output directory
 build
